@@ -1,30 +1,63 @@
 use std::f32::consts::{PI, TAU};
 
-fn main() {}
+const FS: u32 = 10_000;
+const F: u32 = 100;
+const T: u32 = 1;
 
-// const FS: u32 = 100;
-// const F: u32 = 1;
-// const T: u32 = 1;
-
-// fn gen_sin() -> Vec<f32> {
-//     let mut d: Vec<f32> = vec![];
-//     for t in 0..(T * FS) as usize {
-//         let s: f32 = (t as f32 * TAU * F as f32 / FS as f32).sin();
-//         d.push(s)
-//     }
-//     d
-// }
-
-// #[test]
-// fn sin_4() {
-//     let d = gen_sin();
-//     println!("d {:?}", d);
-//     let f4 = (F * 4) as usize;
-//     let i0 = d[F*4];
-// }
-
+// computes the phase, nomalized to range -1..1
 fn angle(i0: f32, i1: f32, q0: f32, q1: f32) -> f32 {
     (i0 - i1).atan2(q0 - q1) / (2.0 * PI)
+}
+fn get_sample(t: f32) -> f32 {
+    (t * TAU * F as f32).sin()
+}
+
+fn sample(t: &mut f32, p_4: f32) -> f32 {
+    // sample i0, q0, i1, q1
+    let i0 = get_sample(*t);
+    println!("t {}, s {}", t, i0);
+    *t += p_4;
+    let q0 = get_sample(*t);
+    println!("t {}, s {}", t, q0);
+    *t += p_4;
+    let i1 = get_sample(*t);
+    println!("t {}, s {}", t, i1);
+    *t += p_4;
+    let q1 = get_sample(*t);
+    println!("t {}, s {}", t, q1);
+    *t += p_4;
+    let w = angle(i0, i1, q0, q1);
+    println!("angle {}, {}", w, w * 360.0);
+    w
+}
+
+#[test]
+fn test_tracking() {
+    let mut t = 0.0;
+    // assumed frequency
+    let f = 90.0;
+    // assumed period
+    let p: f32 = 1.0 / f;
+    let mut p_4 = p / 4.0;
+
+    let mut w0 = sample(&mut t, p_4);
+    let mut it = 0;
+    loop {
+        it += 1;
+        let w1 = sample(&mut t, p_4);
+        let diff = w1 - w0;
+        println!("p_4 {} w0 {}, w1 {}, diff {}", p_4, w0, w1, diff);
+
+        w0 = w1;
+        if diff.abs() < 0.001 {
+            break;
+        } else if diff > 0.0 {
+            p_4 = p_4 * 0.999;
+        } else {
+            p_4 = p_4 / 0.999;
+        }
+    }
+    println!("it {}, f target {}", it, 1.0 / (4.0 * p_4));
 }
 
 fn gen_sample(offset: f32) {
@@ -51,11 +84,11 @@ fn iq_simple() {
 fn gen_sample_error(offset: f32, e: f32) -> f32 {
     let i0 = 0.0f32.sin();
     println!("i0 {}", i0);
-    let i1 = ((offset + e) * PI).sin();
-    println!("i1 {}", i1);
-    let q0 = ((offset + e) * PI / 2.0).sin();
+    let q0 = (offset + e * PI / 2.0).sin();
     println!("q0 {}", q0);
-    let q1 = ((offset + e) * PI * 3.0 / 2.0).sin();
+    let i1 = (offset + e * PI).sin();
+    println!("i1 {}", i1);
+    let q1 = (offset + e * PI * 3.0 / 2.0).sin();
     println!("q1 {}", q1);
     let phase = angle(i0, i1, q0, q1);
     println!("angle {} {}", phase, phase * 360.0);
@@ -67,17 +100,17 @@ fn iq_error() {
     println!("-- offset 0 --");
     println!("1.0 multiplier");
     gen_sample_error(offset, 1.0);
-    println!("1.1 multiplier");
-    gen_sample_error(offset, 1.1); // 10% higher frequency
-    println!("0.9 multiplier");
-    gen_sample_error(offset, 0.9); // 10% lower frequency
+    // println!("1.1 multiplier");
+    // gen_sample_error(offset, 1.1); // 10% higher frequency
+    // println!("0.9 multiplier");
+    // gen_sample_error(offset, 0.9); // 10% lower frequency
 
     println!("-- offset pi/2 --");
     let offset = PI / 2.0;
     println!("1.0 multiplier");
     gen_sample_error(offset, 1.0);
-    println!("1.1 multiplier");
-    gen_sample_error(offset, 1.1); // 10% higher frequency
-    println!("0.9 multiplier");
-    gen_sample_error(offset, 0.9); // 10% lower frequency
+    // println!("1.1 multiplier");
+    // gen_sample_error(offset, 1.1); // 10% higher frequency
+    // println!("0.9 multiplier");
+    // gen_sample_error(offset, 0.9); // 10% lower frequency
 }
