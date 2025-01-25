@@ -1,10 +1,10 @@
 # iq-sample
 
-IQ sampling (a.k.a. complex sampling or quadrature sampling) is a technique commonly used to capture modulated signals.
+IQ sampling (a.k.a. complex sampling or quadrature sampling) is a technique commonly used to capture modulated signals, e.g. in wireless applications.
 
-For our purpose we seek to track the carrier frequency, instead of the modulated signal.
+For our purpose we are interested in finding and tracking the carrier frequency (instead of the modulated signal).
 
-Our goal is to come up with a robust yet computationally effective implementation suitable to running on light weight targets.
+Our goal is to come up with a robust yet computationally effective implementation suitable to running on lightweight targets.
 
 ## Approach
 
