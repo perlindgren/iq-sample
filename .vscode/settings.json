@@ -1,6 +1,8 @@
 {
   "cSpell.ignoreWords": [
     "downconvert",
+    "endfunction",
+    "endwhile",
     "println"
   ]
 }

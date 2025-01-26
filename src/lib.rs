@@ -1,9 +1,25 @@
 use std::f32::consts::{PI, TAU};
 
-const F: u32 = 100;
+const F: f32 = 100.0;
+const E2: f32 = 85.0;
+
 fn get_sample(t: f32) -> f32 {
-    (t * TAU * F as f32).sin()
+    (t * TAU * F).sin()
 }
+
+// fn get_sample(t: f32) -> f32 {
+//     (t * TAU * E2).sin() + (t * TAU * E2 * 2.0).sin()
+// }
+
+// fn get_sample(t: f32) -> f32 {
+//     (t * TAU * E2).sin() + (t * TAU * E2 * 2.0).sin() + (t * TAU * E2 * 3.0).sin()
+// }
+
+// fn get_sample(t: f32) -> f32 {
+//     (1..=8).fold(0.0, |acc, k| {
+//         acc + (t * TAU * E2 * k as f32).sin() / k as f32
+//     })
+// }
 
 // computes the phase, normalized to range -1..1
 fn angle(i0: f32, i1: f32, q0: f32, q1: f32) -> f32 {
@@ -31,34 +47,42 @@ fn tracking(f: f32) {
     let mut p_4 = p / 4.0;
 
     let mut t = 0.0;
-    let mut w0 = sample(&mut t, p_4);
+
     let mut it = 0;
+    let mut f_now;
+
     loop {
         it += 1;
+        let w0 = sample(&mut t, p_4);
         let w1 = sample(&mut t, p_4);
         let diff = w1 - w0;
-        println!("p_4 {} w0 {}, w1 {}, diff {}", p_4, w0, w1, diff);
+        f_now = 1.0 / (4.0 * p_4);
 
-        if diff.abs() < 0.0001 {
+        println!(
+            "f_now {} p_4 {} w0 {}, w1 {}, diff {}",
+            f_now, p_4, w0, w1, diff
+        );
+
+        if diff.abs() < 0.0001 || f_now > 400.0 {
             break;
         } else {
             p_4 -= 0.5 * p_4 * diff;
-            w0 = w1;
         }
     }
-    println!("it {}, f target {}", it, 1.0 / (4.0 * p_4));
+    println!("initial f {}, it {}, f estimated {}", f, it, f_now);
 }
 
 #[test]
 fn test_tracker() {
-    tracking(10.0);
-    tracking(50.0);
-    tracking(80.0);
-    tracking(90.0);
-    tracking(100.0);
-    tracking(110.0);
-    tracking(120.0);
-    // tracking(130.0); // unstable
+    // tracking(10.0);
+    // tracking(50.0);
+    // tracking(80.0);
+    // tracking(90.0);
+    // tracking(100.0);
+    // tracking(110.0);
+    tracking(114.0);
+    //tracking(120.0);
+    //tracking(130.0); // unstable
 }
 
 fn gen_sample(offset: f32) {

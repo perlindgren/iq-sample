@@ -34,17 +34,18 @@ Our goal is to find and track the frequency of the incoming signal. We can do th
 
 That is, if the assumed frequency matches the incoming signal, the phase angle will remain stable, while if the assumed frequency is too high or too low we will observe a frequency shift.
 
-## Implementation
+## Basic Implementation
 
-We start by first prototyping the approach to run the host. The idea with IQ sampling is to adopt the sample rate to the frequency. In order to model this behavior we use a fixed sample frequency for the signal to pick samples from according to the assumed frequency.
+We start by first prototyping the implementation running in an hosted (`std`) environment. The basic idea with IQ sampling is to adopt the sample rate to the carrier frequency. Here we assume the input signal (carrier) will be a perfect sinusoid, the function `get_sample`samples its value at time `t`.
 
 ```rust
-const F: u32 = 100;
+const F: f32 = 100.0;
+
 fn get_sample(t: f32) -> f32 {
-    (t * TAU * F as f32).sin()
+    (t * TAU * F).sin()
 }
 
-// computes the phase, nomalized to range -1..1
+// computes the phase, normalized to range -1..1
 fn angle(i0: f32, i1: f32, q0: f32, q1: f32) -> f32 {
     (i0 - i1).atan2(q0 - q1) / TAU
 }
@@ -65,9 +66,7 @@ fn sample(t: &mut f32, p_4: f32) -> f32 {
 }
 ```
 
-Here we assume the input signal will be a perfect sinusoid, the function `get_sample`samples its value at time `t`.
-
-The `angle`function takes 4 samples and computes the phase angle.
+The `angle`function takes 4 consecutive samples and computes the phase angle. 
 
 We can now implement a simple tracker.
 
@@ -119,6 +118,32 @@ The number of iterations required (shown as comment) is expected lower when assu
 However for this approach to work we need a way to determine the the initial assumed frequency. To this end, it seems that seeking can be done from the lowest reasonable frequency is stable, e.g. 50 Hz.
 
 In case tracking fails (an unreasonable high frequency estimated, e.g. 400 Hz.) we can safely start from lowest frequency.
+
+## Harmonics
+
+For the guitar tuner use-case, even if only one string is tuned at the time, the input signal will not be a perfect sinusoid, but rather the sum of the root frequency and its harmonics, i.e., the low E string in standard tuning, will have a frequency of $f_{e_2}$ = 82Hz, it's first harmonic at $2*f_{e_2}$ (162Hz), the second harmonic on $3*f_{e_2}$ e.t.c. . The harmonic content over time, reflects the timbre of the instrument. The envelope of each harmonic is highly complex, where string, nut, frets, and wood materials together with the electronics - pickup(s) and tone controls all contribute to the resulting signal. In addition, when strumming/picking a string additional "noise" adds to the signal. Typically the harmonic content stabilize quickly into a steady state (a.k.a sustain) where the signal is dominated by resonating harmonics (the root frequency can be seen as the 0th harmonic). 
+
+
+We can emulate the sustain, for 0th and 1st harmonic with the same amplitude it boils down to:
+
+```rust
+const E2: f32 = 82.0;
+
+fn get_sample(t: f32) -> f32 {
+    (t * TAU * E2).sin() + (t * TAU * E2 * 2.0).sin()
+}
+```
+
+When re, running the test the tracker successfully finds the carrier starting from an estimated low frequency to about 20% above the carrier.
+
+```rust
+const E2: f32 = 82.0;
+
+fn get_sample(t: f32) -> f32 {
+    (t * TAU * E2).sin() + (t * TAU * E2 * 2.0).sin() + (t * TAU * E2).sin() + (t * TAU * E2 * 3.0).sin()
+}
+```
+
 
 
 
