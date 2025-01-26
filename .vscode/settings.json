@@ -1,3 +1,6 @@
 {
-  "cSpell.ignoreWords": ["downconvert"]
+  "cSpell.ignoreWords": [
+    "downconvert",
+    "println"
+  ]
 }
